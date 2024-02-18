@@ -17,7 +17,7 @@ type PlayerStatistics struct {
 	Name           string
 	Score          int
 	KillCount      int
-	FavoritWeapon  string
+	FavoriteWeapon string
 	Nemesis        string
 	TargetPractice string
 	Vulnerability  string
@@ -52,7 +52,7 @@ func getPlayerStatistics(players map[int]*parser.PlayersInfo) []*PlayerStatistic
 			Name:           info.Username,
 			Score:          info.Score,
 			KillCount:      info.KillCount,
-			FavoritWeapon:  getTop(info.KillCountByMean),
+			FavoriteWeapon: getTop(info.KillCountByMean),
 			Nemesis:        getTop(info.DeathCountBySource),
 			TargetPractice: getTop(info.KillCountByPlayerTag),
 			Vulnerability:  getTop(info.DeathCountByWeapon),
@@ -97,12 +97,12 @@ func PrintHumanReadableReport(game *parser.Game, name string) {
 		fmt.Println("    Kill Count:", ps.KillCount)
 		fmt.Println("    Nemesis:", ps.Nemesis)
 		fmt.Println("    Target Practice:", ps.TargetPractice)
-		fmt.Println("    Favorit Weapon:", ps.FavoritWeapon)
+		fmt.Println("    Favorite Weapon:", ps.FavoriteWeapon)
 		fmt.Println("    Vulnerability:", ps.Vulnerability)
 	}
 }
 
-func Printjson(game *parser.Game, name string) {
+func PrintJson(game *parser.Game, name string) {
 	report := createReportStructure(game, name)
 	jsonData, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {

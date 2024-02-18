@@ -45,7 +45,7 @@ func main() {
 		}
 
 		if printJ != "" {
-			reports.Printjson(game, fmt.Sprintf("game-%d", idx))
+			reports.PrintJson(game, fmt.Sprintf("game-%d", idx))
 		}
 
 		if printH != "" {
