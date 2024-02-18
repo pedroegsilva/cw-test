@@ -7,28 +7,32 @@ import (
 
 	"github.com/pedroegsilva/cw-test/parser"
 	"github.com/pedroegsilva/cw-test/reports"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	// Open the file
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+
 	file, err := os.Open("/home/pedro/repos/cw-test/input/qgames.log")
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		log.Error().Msg(fmt.Sprintf("Error opening file: %s", err))
 		return
 	}
 	defer file.Close()
 
-	// Create a scanner to read the file line by line
 	scanner := bufio.NewScanner(file)
 	gameScanner := parser.InitScanner(scanner)
 
 	idx := 0
 	for game, ok, err := gameScanner.GetGame(); ok; game, ok, err = gameScanner.GetGame() {
-		if err != nil {
-			fmt.Println("err", err)
-			break
-		}
 		idx++
+		if err != nil {
+			log.Error().Msg(fmt.Sprintf("error on game-%d: %s", idx, err))
+			continue
+		}
 		reports.PrintHumanReadableReport(game, fmt.Sprintf("game-%d", idx))
+		reports.Printjson(game, fmt.Sprintf("game-%d", idx))
 	}
 }

@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -39,17 +38,17 @@ func getEvent(line string) (*Event[any], error) {
 		switch GetLogHeader(logHeader) {
 		case LHItem:
 			if len(words) != 4 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting 4 words on '%s' log", LHItem.String())
+				return &Event[any]{}, &SyntaxError{LHItem, "expecting 4 words on log line"}
 			}
 
 			itemSplit := strings.Split(words[3], "_")
 			if len(itemSplit) < 2 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Item type to have at least 2 words")
+				return &Event[any]{}, &SyntaxError{LHItem, "expecting Item type to have at least 2 words"}
 			}
 
 			amount, err := strconv.Atoi(words[2])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Item amount to be an integer")
+				return &Event[any]{}, &SyntaxError{LHItem, "expecting Item amount to be an integer"}
 			}
 
 			item := Item{
@@ -70,7 +69,7 @@ func getEvent(line string) (*Event[any], error) {
 
 		case LHKill:
 			if len(words) < 5 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting more than 5 words on '%s' log", LHKill.String())
+				return &Event[any]{}, &SyntaxError{LHKill, "expecting more than 5 words on log line"}
 			}
 			kill := Kill{}
 			var buffer []string
@@ -90,13 +89,13 @@ func getEvent(line string) (*Event[any], error) {
 			buffer = nil
 
 			if kill.Means == "" {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Means on '%s' log", LHKill.String())
+				return &Event[any]{}, &SyntaxError{LHKill, "missing Means on log line"}
 			}
 			if kill.Victim == "" {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Victim on '%s' log", LHKill.String())
+				return &Event[any]{}, &SyntaxError{LHKill, "missing Victim on log line"}
 			}
 			if kill.Killer == "" {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Killer on '%s' log", LHKill.String())
+				return &Event[any]{}, &SyntaxError{LHKill, "missing Killer on log line"}
 			}
 
 			return &Event[any]{
@@ -107,12 +106,12 @@ func getEvent(line string) (*Event[any], error) {
 
 		case LHClientConnect:
 			if len(words) != 3 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting 3 words on '%s' log", LHClientConnect.String())
+				return &Event[any]{}, &SyntaxError{LHClientConnect, "expecting 3 words on on log line"}
 			}
 
 			clientId, err := strconv.Atoi(words[2])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Item amount to be an integer")
+				return &Event[any]{}, &SyntaxError{LHClientConnect, "expecting clientId to be an integer"}
 			}
 
 			clientConnect := ClientConnect{
@@ -126,7 +125,7 @@ func getEvent(line string) (*Event[any], error) {
 			}, nil
 
 		case LHInitGame:
-			// join words from index 2 to last to parse server init data
+			// TODO(pedro.silva) join words from index 2 to last to parse server init data
 			return &Event[any]{
 				HeaderType: LHInitGame,
 				Time:       time,
@@ -151,15 +150,15 @@ func getEvent(line string) (*Event[any], error) {
 
 		case LHClientUserinfoChanged:
 			if len(words) < 4 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting more than 4 words on '%s' log", LHClientUserinfoChanged.String())
+				return &Event[any]{}, &SyntaxError{LHClientUserinfoChanged, "expecting more than 4 words on log line"}
 			}
 
 			clientId, err := strconv.Atoi(words[2])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Item amount to be an integer")
+				return &Event[any]{}, &SyntaxError{LHClientUserinfoChanged, "expecting clientId to be an integer"}
 			}
 
-			//TODO(pedro.silva) refactor to parse function
+			// (pedro.silva) refactor to parse function
 			username := strings.Split(strings.Join(words[3:], " "), "\\")[1]
 			clientUserinfoChanged := ClientUserinfoChanged{
 				ClientId: clientId,
@@ -174,12 +173,12 @@ func getEvent(line string) (*Event[any], error) {
 
 		case LHClientBegin:
 			if len(words) != 3 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting 3 words on '%s' log", LHClientBegin.String())
+				return &Event[any]{}, &SyntaxError{LHClientBegin, "expecting 3 words on log line"}
 			}
 
 			clientId, err := strconv.Atoi(words[2])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Item amount to be an integer")
+				return &Event[any]{}, &SyntaxError{LHClientBegin, "expecting clientId to be an integer"}
 			}
 
 			clientBegin := ClientBegin{
@@ -194,12 +193,12 @@ func getEvent(line string) (*Event[any], error) {
 
 		case LHClientDisconnect:
 			if len(words) != 3 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting 3 words on '%s' log", LHClientDisconnect.String())
+				return &Event[any]{}, &SyntaxError{LHClientDisconnect, "expecting 3 words on log line"}
 			}
 
 			clientId, err := strconv.Atoi(words[2])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Item amount to be an integer")
+				return &Event[any]{}, &SyntaxError{LHClientDisconnect, "expecting clientId to be an integer"}
 			}
 
 			clientDisconnect := ClientDisconnect{
@@ -221,28 +220,28 @@ func getEvent(line string) (*Event[any], error) {
 
 		case LHScore:
 			if len(words) < 8 {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting more or equal to 8 words on '%s' log", LHScore.String())
+				return &Event[any]{}, &SyntaxError{LHScore, "expecting 8 or more words on log line"}
 			}
 
-			points, err := strconv.Atoi(words[2])
+			score, err := strconv.Atoi(words[2])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Score points to be an integer")
+				return &Event[any]{}, &SyntaxError{LHScore, "expecting points to be an integer"}
 			}
 
 			ping, err := strconv.Atoi(words[4])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Score ping to be an integer")
+				return &Event[any]{}, &SyntaxError{LHScore, "expecting ping to be an integer"}
 			}
 
 			clientId, err := strconv.Atoi(words[6])
 			if err != nil {
-				return &Event[any]{}, fmt.Errorf("invalid line. Expecting Score clientId to be an integer")
+				return &Event[any]{}, &SyntaxError{LHScore, "expecting clientId to be an integer"}
 			}
 
-			username := strings.Join(words[8:], " ")
+			username := strings.Join(words[7:], " ")
 
-			score := Score{
-				Points:   points,
+			s := Score{
+				Score:    score,
 				Ping:     ping,
 				ClientId: clientId,
 				Username: username,
@@ -251,22 +250,22 @@ func getEvent(line string) (*Event[any], error) {
 			return &Event[any]{
 				HeaderType: LHScore,
 				Time:       time,
-				Data:       score,
+				Data:       s,
 			}, nil
 
 		case LHSay:
 			return &Event[any]{
-				HeaderType: LHScore,
+				HeaderType: LHSay,
 				Time:       time,
 				Data:       Say{},
 			}, nil
 
 		case LHUnknown:
-			return &Event[any]{}, fmt.Errorf("invalid line. Unknown log header")
+			return &Event[any]{}, &SyntaxError{LHUnknown, "unknown log header"}
 		}
 	}
 
-	return &Event[any]{}, fmt.Errorf("invalid line. header could not be found")
+	return &Event[any]{}, &SyntaxError{LHUnknown, " header could not be found"}
 }
 
 type LogHeader uint8
@@ -332,7 +331,7 @@ type ClientUserinfoChanged struct {
 }
 
 type Score struct {
-	Points   int
+	Score    int
 	Ping     int
 	ClientId int
 	Username string

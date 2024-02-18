@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 func InitScanner(scanner *bufio.Scanner) *GameScanner {
@@ -14,27 +16,28 @@ func InitScanner(scanner *bufio.Scanner) *GameScanner {
 	}
 }
 
+// TODO(pedro.silva) Add unit tests
 func (gs *GameScanner) GetGame() (*Game, bool, error) {
 	var game *Game = nil
 	for event, ok := gs.scan(); ok; event, ok = gs.scan() {
 		switch event.HeaderType {
 		case LHKill:
 			if game == nil {
-				return nil, true, fmt.Errorf("kill from empty game")
+				return nil, true, &ContextError{LHKill, "empty game"}
 			}
 			kill, ok := event.Data.(Kill)
 			if !ok {
-				return nil, true, fmt.Errorf("bad parse of event. %s", LHKill.String())
+				return nil, true, &ContextError{LHKill, "bad parse of event"}
 			}
 
 			var kInfo *PlayersInfo
 			if kId, ok := gs.clientIdByUsername[kill.Killer]; !ok {
-				return nil, true, fmt.Errorf("could not find killer id. username: %s", kill.Killer)
+				return nil, true, &ContextError{LHKill, fmt.Sprintf("could not find killer id. username: %s", kill.Killer)}
 			} else {
 				if ki, ok := game.PlayersInfoById[kId]; ok {
 					kInfo = ki
 				} else {
-					return nil, true, fmt.Errorf("could not find killer information. id: %d", kId)
+					return nil, true, &ContextError{LHKill, fmt.Sprintf("could not find killer information. id: %d", kId)}
 				}
 			}
 
@@ -51,10 +54,10 @@ func (gs *GameScanner) GetGame() (*Game, bool, error) {
 					if vi, ok := game.PlayersInfoById[vId]; ok {
 						vInfo = vi
 					} else {
-						return nil, true, fmt.Errorf("could not find victim information. id: %d", vId)
+						return nil, true, &ContextError{LHKill, fmt.Sprintf("could not find victim information. id: %d", vId)}
 					}
 				} else {
-					return nil, true, fmt.Errorf("could not find victim id. username: %s", kill.Victim)
+					return nil, true, &ContextError{LHKill, fmt.Sprintf("could not find victim id. username: %s", kill.Victim)}
 				}
 
 				vInfo.DeathCount++
@@ -88,7 +91,7 @@ func (gs *GameScanner) GetGame() (*Game, bool, error) {
 			game.PlayersInfoById[0].Username = "<world>"
 		case LHShutdownGame:
 			if game == nil {
-				return nil, true, fmt.Errorf("shutdown from empty game")
+				return nil, true, &ContextError{LHShutdownGame, "empty game"}
 			}
 			if game.EndingReason == "" {
 				game.EndingReason = "SERVER_UNEXPECTED_SHUTDOWN"
@@ -97,45 +100,45 @@ func (gs *GameScanner) GetGame() (*Game, bool, error) {
 			return game, true, nil
 		case LHExit:
 			if game == nil {
-				return nil, true, fmt.Errorf("exit from empty game")
+				return nil, true, &ContextError{LHExit, "empty game"}
 			}
 			exit, ok := event.Data.(Exit)
 			if !ok {
-				return nil, true, fmt.Errorf("bad parse of event. %s", LHExit.String())
+				return nil, true, &ContextError{LHExit, "bad parse of event"}
 			}
 			game.EndingReason = exit.Reason
 		case LHClientConnect:
 			if game == nil {
-				return nil, true, fmt.Errorf("client connected to empty game")
+				return nil, true, &ContextError{LHClientConnect, "empty game"}
 			}
 			cc, ok := event.Data.(ClientConnect)
 			if !ok {
-				return nil, true, fmt.Errorf("bad parse of event. %s", LHClientConnect.String())
+				return nil, true, &ContextError{LHClientConnect, "bad parse of event"}
 			}
 			game.PlayersInfoById[cc.ClientId] = initPlayerInfo(cc.ClientId)
 		case LHClientUserinfoChanged:
 			if game == nil {
-				return nil, true, fmt.Errorf("user info changed from empty game")
+				return nil, true, &ContextError{LHClientUserinfoChanged, "empty game"}
 			}
 			cuic, ok := event.Data.(ClientUserinfoChanged)
 			if !ok {
-				return nil, true, fmt.Errorf("bad parse of event. %s", LHClientUserinfoChanged.String())
+				return nil, true, &ContextError{LHClientUserinfoChanged, "bad parse of event"}
 			}
 
 			if pi, ok := game.PlayersInfoById[cuic.ClientId]; ok {
 				pi.Username = cuic.Username
 				gs.clientIdByUsername[cuic.Username] = cuic.ClientId
 			} else {
-				return nil, true, fmt.Errorf("inexistent client change information. id: %d", cuic.ClientId)
+				return nil, true, &ContextError{LHClientUserinfoChanged, fmt.Sprintf("inexistent client change information. id: %d", cuic.ClientId)}
 			}
 		case LHClientDisconnect:
 			if game == nil {
-				return nil, true, fmt.Errorf("client disconnect from empty game")
+				return nil, true, &ContextError{LHClientDisconnect, "empty game"}
 			}
 
 			cd, ok := event.Data.(ClientDisconnect)
 			if !ok {
-				return nil, true, fmt.Errorf("bad parse of event. %s", LHClientDisconnect.String())
+				return nil, true, &ContextError{LHClientDisconnect, "bad parse of event"}
 			}
 
 			if pi, ok := game.PlayersInfoById[cd.ClientId]; ok {
@@ -143,7 +146,7 @@ func (gs *GameScanner) GetGame() (*Game, bool, error) {
 				delete(game.PlayersInfoById, cd.ClientId)
 				delete(gs.clientIdByUsername, pi.Username)
 			} else {
-				return nil, true, fmt.Errorf("inexistent client disconnected. id: %d", cd.ClientId)
+				return nil, true, &ContextError{LHClientUserinfoChanged, fmt.Sprintf("inexistent client disconnected. id: %d", cd.ClientId)}
 			}
 		case LHScore:
 		case LHClientBegin:
@@ -165,14 +168,12 @@ func (gs *GameScanner) scan() (*Event[any], bool) {
 			line := strings.TrimSpace(gs.Scanner.Text())
 			event, err := getEvent(line)
 			if err != nil {
-				//TODO(pedro.silva) Log event error and unknown as a warnning
-				// fmt.Println("Error", err)
-				// if event.HeaderType == LHUnknown {}
+				log.Warn().Msg(fmt.Sprintf("scan could not parse line correctly. error: %s | line: %s", err, line))
 				return gs.scan()
 			}
 			// Check for errors during scan
 			if err := gs.Scanner.Err(); err != nil {
-				fmt.Println("Error reading file:", err)
+				log.Warn().Msg(fmt.Sprintf("error reading file. error: %s", err))
 			}
 			return event, true
 		} else {
