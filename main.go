@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 
@@ -13,9 +14,19 @@ import (
 )
 
 func main() {
-	zerolog.SetGlobalLevel(zerolog.Disabled)
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	inputPath := flag.String("i", "", "full path of the log file")
+	flag.Parse()
 
-	file, err := os.Open("/home/pedro/repos/cw-test/input/qgames.log")
+	if *inputPath == "" {
+		flag.Usage()
+		return
+	}
+
+	printJ := os.Getenv("OUT_JSON")
+	printH := os.Getenv("OUT_HUMAN")
+
+	file, err := os.Open(*inputPath)
 	if err != nil {
 		log.Error().Msg(fmt.Sprintf("Error opening file: %s", err))
 		return
@@ -32,7 +43,13 @@ func main() {
 			log.Error().Msg(fmt.Sprintf("error on game-%d: %s", idx, err))
 			continue
 		}
-		reports.PrintHumanReadableReport(game, fmt.Sprintf("game-%d", idx))
-		reports.Printjson(game, fmt.Sprintf("game-%d", idx))
+
+		if printJ != "" {
+			reports.Printjson(game, fmt.Sprintf("game-%d", idx))
+		}
+
+		if printH != "" {
+			reports.PrintHumanReadableReport(game, fmt.Sprintf("game-%d", idx))
+		}
 	}
 }
