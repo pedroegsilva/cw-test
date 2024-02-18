@@ -4,7 +4,7 @@ This is the response for the Software Engineer test that was sent to me.
 This project includes a Makefile that facilitates the building and running of a Dockerized Go application. The application is designed to parse the Quake 3 log files and provide output in either human-readable or JSON format.
 
 ## Structure
-The project consist on 2 packages (parser and report) each responsible for the parsing and creation of the reports respectively.
+The project consist on 2 packages (parser and report) each responsible for the parsing and the creation of reports respectively.
 
 ### Parser package
 In the parser package, there are two fundamental components: the "event" entity and the "game" entity.
@@ -45,7 +45,7 @@ This command will build the Docker image tagged as `cw-test:local` and run the c
 To build and run the Docker container with JSON output:
 
 ```bash
-make run-docker-json-out
+make run-docker-json
 ```
 
 This command will build the Docker image tagged as `cw-test:local` and run the container with the `OUT_JSON` environment variable set to `true`.

@@ -7,7 +7,7 @@ run-docker:
 	docker build . -t ${IMAGE_TAG}
 	docker run -e OUT_HUMAN=true ${IMAGE_TAG}
 
-run-docker-json-out:  
+run-docker-json:  
 	docker build . -t ${IMAGE_TAG}
 	docker run -e OUT_JSON=true ${IMAGE_TAG}
 
